@@ -69,6 +69,7 @@
     <Compile Include="Assets\Scripts\FOVEditor.cs" />
     <Compile Include="Assets\Scripts\FieldOfView.cs" />
     <Compile Include="Assets\Scripts\Player.cs" />
+    <Compile Include="Assets\Scripts\PlayerHingeEditor.cs" />
     <Compile Include="Assets\Scripts\RaycastController.cs" />
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>D:/jamdecasa/doar5minute/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
