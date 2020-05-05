@@ -4,9 +4,10 @@ using UnityEngine;
 using UnityEditor;
 
 
-[CustomEditor(typeof(FieldOfView))]
-public class FOVEditor : Editor
+//[CustomEditor(typeof(FieldOfView))]
+public class FOVEditor : MonoBehaviour
 {
+    /*
     private void OnSceneGUI()
     {
         FieldOfView fow = (FieldOfView)target;
@@ -23,5 +24,5 @@ public class FOVEditor : Editor
         {
             Handles.DrawLine(fow.transform.position, visibleTarget.position);
         }
-    }
+    }*/
 }

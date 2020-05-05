@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,7 +10,6 @@ public class EnemyCamera : AbstractEnemy
     public float cameraBound;
     public float cameraMoveSpeed;
 
-    private FieldOfView fow;
     // Start is called before the first frame update
     void Start()
     {
@@ -21,7 +21,7 @@ public class EnemyCamera : AbstractEnemy
     void Update()
     {
         x += Time.deltaTime * cameraMoveSpeed;
-        transform.localRotation = Quaternion.Euler(transform.rotation.x, transform.rotation.y, Mathf.Sin(x) * cameraBound + 90);
+        transform.localRotation = Quaternion.Euler(transform.rotation.x, transform.rotation.y, Mathf.Sin(-x) * cameraBound + 90 * Math.Sign(transform.rotation.z));
 
     }
 }

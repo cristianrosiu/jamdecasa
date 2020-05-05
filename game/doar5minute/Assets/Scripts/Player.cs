@@ -5,14 +5,21 @@ using UnityEngine;
 [RequireComponent (typeof (RaycastController))]
 public class Player : MonoBehaviour
 {
+
+    //Game manager
+    [HideInInspector]
+    public bool isDead = false;
+    public bool isWinner = false;
+
     //Movement constants
-    public float jumpHeight = 4;            //Max height the player can jump
+    public float maxJumpHeight = 4;            //Max height the player can jump
+    public float minJumpHeight = 1;
     public float timeToJumpApex = .4f;      //How much time the jump action takes to reach apex
     public float moveSpeed = 6f;             //Player movement speed
     public float dashSpeed = 30f;            //Player dash speed
     public float dashTime = 10f;
-    float accelerationTimeAirborne = .25f;   //In air acceleration
-    float accelerationTimeGrounded = .1f;   //Grounded acceleration
+    float accelerationTimeAirborne = .3f;   //In air acceleration
+    float accelerationTimeGrounded = .08f;   //Grounded acceleration
 
     //Grappling hook
     public float hingeViewRadius;
@@ -34,71 +41,75 @@ public class Player : MonoBehaviour
     public float fallTime = 0.5f;
     float timeUntilFall; // timeUntilFall before I unstick and player fall
 
-    //Kinematic operation variables/constants
+    //Animator
+    public Animator animator;
 
+    //Kinematic operation variables/constants
     [HideInInspector]
     public Vector3 velocity;
     float gravity;
-    float jumpVelocity = 8;
+    float maxJumpVelocity;
+    float minJumpVelocity; 
     float velocityXSmoothing;
 
     [HideInInspector]
     public float faceDirection;
     RaycastController controller;
 
+    //Dash
     [HideInInspector]
-    public bool isDashing = false;
+    public bool dashed = false;
+    public float dashCooldown = 2f;
+    float timeUntilDash;
 
-    float timeLeft;
+    private SpriteRenderer renderer;
 
-    void Dash()
-    {
-        isDashing = true;
-        velocity.x = faceDirection * dashSpeed / dashTime;
    
-    }
+
 
     // Start is called before the first frame update
     void Start()
     {
-     
         controller = GetComponent<RaycastController>();
+        renderer = GetComponent<SpriteRenderer>();
 
-        gravity = -(2 * jumpHeight) / Mathf.Pow(timeToJumpApex, 2);     //Kinematic operatin defining deltaMovement (gravity is treated as acceleartion here)
-        jumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;             //kinematic operation of jump velocity
+        gravity = -(2 * maxJumpHeight) / Mathf.Pow(timeToJumpApex, 2);          //Kinematic operatin defining deltaMovement (gravity is treated as acceleartion here)
+        maxJumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;                  //kinematic operation of jump velocity
+        minJumpVelocity = Mathf.Sqrt(2 * Mathf.Abs(gravity) * minJumpHeight);
 
-        StartCoroutine("FindTargetsWithDelay", .2f);
-        print("Gravity: " + gravity + " Jump Velocity: " + jumpVelocity);
+        print("Gravity: " + gravity + " Jump Velocity: " + maxJumpVelocity);
     }
-    // Update is called once per frame
     void Update()
     {
-       
         //Movement Input
-        Vector2 input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));  //Get Input from user
+        Vector2 input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));  // Get Input from user
         if (input.x != 0)
-            faceDirection = input.x; // stores last direction the player faced.
-        int wallDirX = (controller.collisions.left) ? -1 : 1;                                       //Direction of the wall we colided with.
+        {
+            faceDirection = input.x;    // Stores last direction the player faced.
+        }
+        animator.SetFloat("Speed", Mathf.Abs(input.x));
+
+        int wallDirX = (controller.collisions.left) ? -1 : 1;    // Direction of the wall we colided with.
 
         //Horizontal movement smoothing
-        float targetVelocityX = input.x * moveSpeed;    //Desired velocity we want to achieve when moving
+        float targetVelocityX = input.x * moveSpeed;          // Desired velocity we want to achieve when moving
         velocity.x = Mathf.SmoothDamp(velocity.x, targetVelocityX, ref velocityXSmoothing, (controller.collisions.below) ? accelerationTimeGrounded : accelerationTimeAirborne);    //Smooth the movement between initial velocity and desired velosity (acceleration is taken into account)
 
         //Wall sliding
         bool wallSliding = false;
         if ((controller.collisions.left || controller.collisions.right) && // If player touching either wall &&
-            !controller.collisions.below && velocity.y < 0)  //If player is touching the wall while mid air
+            !controller.collisions.below && velocity.y < 0)                // If player is touching the wall while mid air
         {
 
             wallSliding = true;
 
             if (velocity.y < -wallSlideSpeedMax && timeUntilFall > 0)
             {
-                velocity.y = -wallSlideSpeedMax;    // if object falls faster than max wall slide speed while 
+                velocity.y = -wallSlideSpeedMax;    // If object falls faster than max wall slide speed while 
                 timeUntilFall -= Time.deltaTime;
             }
 
-            if (timeToWallUnstick > 0)  //Time how much time before player can unstick from the wall (0.25 secs)         
+            if (timeToWallUnstick > 0)             //Time how much time before player can unstick from the wall (0.25 secs)         
             {
                 velocityXSmoothing = 0;
                 velocity.x = 0;
@@ -116,13 +127,15 @@ public class Player : MonoBehaviour
                 timeToWallUnstick = wallStickTime;
             }
         }
+
+        animator.SetBool("isOnWall", wallSliding);
+
         //If player is on ground just set its velocity to 0
         if (controller.collisions.above || controller.collisions.below)
         {
             timeUntilFall = fallTime; // if on floor or hit the hed you can slide again
             velocity.y = 0;
         }
-
 
         //Jump Input
         if (Input.GetKeyDown(KeyCode.Space))
@@ -131,111 +144,67 @@ public class Player : MonoBehaviour
             {
                 if (input.x == 0)
                 {
-                    velocity.x = -wallDirX * wallJumpOff.x; //If we are not moving and jump while wallsliding then jump off the wall 
+                    velocity.x = -wallDirX * wallJumpOff.x; // If we are not moving and jump while wallsliding then jump off the wall 
                     velocity.y = wallJumpOff.y;
                 } else if (-wallDirX == input.x)
                 {
-                    timeUntilFall = fallTime; // if jumping and sliding on wall and changing direction => you are able to slide again
+                    timeUntilFall = fallTime;               // If jumping and sliding on wall and changing direction => you are able to slide again
                     velocity.x = -wallDirX * wallLeap.x;
                     velocity.y = wallLeap.y;
                 }
             }
             if (controller.collisions.below)
             {
-                velocity.y = jumpVelocity;
+                velocity.y = maxJumpVelocity;
             }
 
         }
 
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetKeyUp(KeyCode.Space))
         {
-            if(visibleTargets.Count != 0)
+            if (velocity.y > minJumpVelocity)
             {
-                float distance = (transform.position - visibleTargets[0].position).magnitude;
-
-               
-                   isHooked = true;
-                
-               
-                //velocity -= transform.position - visibleTargets[0].position;
-
+                velocity.y = minJumpVelocity;
             }
         }
 
-        if (Input.GetMouseButtonDown(1))
-        {
-            
-            isHooked = false;
-              
-        }
-        if (visibleTargets.Count == 0)
-        {
-            isHooked = false;
-        }
 
-        if (isHooked )
-        {
-
-            float distance = (transform.position - visibleTargets[0].position).magnitude;
-            float maxDistance = 7;
-            ;
-            if (distance > maxDistance)
-            {
-                Vector3 test = visibleTargets[0].position + (transform.position - visibleTargets[0].position).normalized * maxDistance;
-
-                float dx = (test.x - transform.position.x) / Time.deltaTime;
-                float dy = (test.y - transform.position.y) / Time.deltaTime;
-
-               
-                
-               
-                velocity.x = (-faceDirection * 15 * Vector2.Perpendicular((Vector2)visibleTargets[0].position - (Vector2)transform.position).normalized).x;
-                
-               
-                velocity.y = dy;
-
-            }
-           
-
-          
-        }
-
-
-
-        if (Input.GetKeyDown(KeyCode.LeftShift))
+        //Dash
+        if (Input.GetKeyDown(KeyCode.LeftShift) && dashed == false)
         {
             Dash();
-            timeLeft = dashTime;
+            timeUntilDash = dashCooldown;
         }
-        if (timeLeft > 0f)
+        if (timeUntilDash > 0f)
         {
-            timeLeft -= Time.deltaTime;
+            timeUntilDash -= Time.deltaTime;
         }
         else
         {
-            isDashing = false;
+            dashed = false;
         }
 
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
+        
+        if(velocity.x < 0)
+        {
+            renderer.flipX = true;
+        
+        }
+        else if(velocity.x > 0)
+        {
+            renderer.flipX = false;
+        }
+
+    
     }
 
-    IEnumerator FindTargetsWithDelay(float delay)
+    void Dash()
     {
-        while (true)
-        {
-            yield return new WaitForSeconds(delay);
-            FindVisibleHinges();
-        }
+        dashed = true;
+        velocity.x = faceDirection * dashSpeed / dashTime;
+
     }
-    private void FindVisibleHinges()
-    {
-        visibleTargets.Clear();
-        Collider2D[] targetsInViewRadius = Physics2D.OverlapCircleAll(transform.position, hingeViewRadius, targetMask);
-        for (int i = 0; i < targetsInViewRadius.Length; i++)
-        {
-            Transform target = targetsInViewRadius[i].transform;
-            visibleTargets.Add(target);
-        }
-    }
+
 }
