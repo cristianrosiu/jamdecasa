@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,12 +18,14 @@ public class GameManager : MonoBehaviour
     public GameObject winPanel;
     public Image winPanelImage;
     public Sprite[] starSprites;
+    public Text dashCooldown;
 
     private AudioSource audioSource;
 
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
+        dashCooldown.text = "Dash Cooldown: 0";
     }
 
     void Update()
@@ -31,6 +34,7 @@ public class GameManager : MonoBehaviour
         {
             OnGameover();
         }
+        showDeshCooldown();
   
     }
 
@@ -61,5 +65,19 @@ public class GameManager : MonoBehaviour
             ShowWinPanel();
         }
         
+    }
+
+    void showDeshCooldown()
+    {
+
+        if(player.timeUntilDash <= 0)
+        {
+            dashCooldown.text = "Desh Cooldown: 0";
+        }
+        else
+        {
+            dashCooldown.text = "Desh Cooldown: " + Mathf.Ceil(player.timeUntilDash).ToString();
+        }
+        print(player.timeUntilDash);
     }
 }

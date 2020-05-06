@@ -65,6 +65,7 @@
   <ItemGroup>
     <Compile Include="Assets\External Assets\CyberPunk\Scripts\Done_BGScroller.cs" />
     <Compile Include="Assets\External Assets\CyberPunk\Scripts\Perspective2DSortMode.cs" />
+    <Compile Include="Assets\RespawnController.cs" />
     <Compile Include="Assets\Scripts\AbstractEnemy.cs" />
     <Compile Include="Assets\Scripts\EnemyCamera.cs" />
     <Compile Include="Assets\Scripts\EnemyGuard.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="Assets\Scripts\Player.cs" />
     <Compile Include="Assets\Scripts\RaycastController.cs" />
     <Compile Include="Assets\Scripts\SettingsMenu.cs" />
+    <Compile Include="Assets\Scripts\TextGenerator.cs" />
     <Compile Include="Assets\Scripts\WinPanel.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01_UGUI.cs" />
